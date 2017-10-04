@@ -1,0 +1,175 @@
+<f:layout name="Importer/Default" />
+
+<f:section name="content">
+
+	<h1>Welcome to the Simple FAL Importer</h1>
+
+	<div class="alert alert-warning">
+		<strong>Warning!</strong>
+		<p>Please backup your database before pressing any button here!</p>
+	</div>
+
+	<br />
+
+	<p>
+		To get started, please provide some informations about the Extension<br />
+		and the files you want to import to the File Abstraction Layer.
+	</p>
+
+	<br />
+
+	<f:flashMessages />
+
+	<f:form method="post" object="{configuration}" objectName="configuration">
+
+		<h3>Source</h3>
+
+		<div class="row">
+			<div class="col-md-4">
+				<div class="form-group">
+					<label for="table">Database tablename of the records holding old uploads</label>
+					<f:form.textfield type="text" class="form-control" property="table" id="table" placeholder="tx_oldextension_record"/>
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="form-group">
+					<label for="field">Name of the field in the table reffering to uploads</label>
+					<f:form.textfield type="text" class="form-control" property="field" id="field" placeholder="wonderful_images" />
+				</div>
+			</div>
+			<div class="col-md-4">
+				<div class="form-group">
+					<label for="folder">Name of the folder holding the uploads in uploads/</label>
+					<f:form.textfield type="text" class="form-control" property="folder" id="folder" placeholder="tx_oldextension" />
+				</div>
+			</div>
+		</div>
+
+		<h3>Target</h3>
+
+		<div class="row">
+			<div class="col-md-2">
+				<label for="storageUid">File Storage UID</label>
+				<f:form.textfield type="text" class="form-control" property="storageUid" id="storageUid" value="{f:if(condition: configuration.storageUid, then: configuration.storageUid, else: 1)}" />
+			</div>
+			<div class="col-md-4">
+				<label for="targetFolder">Folder path in the File Storage (must exist!)</label>
+				<f:form.textfield type="text" class="form-control" property="targetFolder" id="targetFolder" placeholder="user_uploads/imported-images" />
+			</div>
+		</div>
+
+		<br />
+
+		<f:form.hidden property="step" value="check" />
+
+		<button class="btn btn-primary">Check configuration</button>
+
+	</f:form>
+
+	<br />
+
+	<f:if condition="{records}">
+
+		<f:then>
+
+			<h2>
+				These records has been found:
+			</h2>
+
+			<div class="alert alert-danger">
+				<strong>Please do not perform the import for files more than once per field even if the files still show up here!</strong>
+			</div>
+
+			<div class="alert alert-info">
+				<strong>Please scroll down to perform the import.</strong>
+			</div>
+
+			<table class="table-striped table-condensed">
+				<thead>
+				<tr>
+					<th>UID</th>
+					<th>Images</th>
+				</tr>
+				</thead>
+				<f:for each="{records}" as="record">
+					<tr>
+						<td>{record.uid}</td>
+						<td>
+							Images:
+							<ul>
+								<f:for each="{record.falimporterInfo}" as="state" key="fileName">
+									<li>
+										<span class="{f:if(condition: state, then: 'text-success', else: 'text-danger')}"></span>
+										<f:if condition="{state}">
+											<f:then>
+												<span class="text-success">File found: uploads/{configuration.folder}/{fileName}</span>
+											</f:then>
+											<f:else>
+												<span class="text-danger">File not found: uploads/{configuration.folder}/{filename}</span>
+											</f:else>
+										</f:if>
+									</li>
+								</f:for>
+							</ul>
+						</td>
+					</tr>
+				</f:for>
+			</table>
+
+			<div class="alert alert-danger">
+				<strong>Please do not perform the import for files more than once per field even if the files still show up here!</strong>
+			</div>
+
+			<div class="panel panel-warning">
+				<div class="panel-heading">
+					<h3 class="panel-title">Danger Zone</h3>
+				</div>
+				<div class="panel-body">
+					<p>
+						If you are fine with the results above, you can import them to FAL now.<br />
+						The importer will copy the files above to {configuration.targetFolder} and create sys_file_reference records<br />
+						pointing to the records above. After that you have to change the TCA configuration by yourself.<br />
+						<strong>You may do not do this on friday in case that anything goes wrong.</strong>
+					</p>
+
+					<f:form method="post" object="{configuration}" objectName="configuration">
+						<f:form.hidden property="table" />
+						<f:form.hidden property="field" />
+						<f:form.hidden property="folder" />
+						<f:form.hidden property="storageUid" />
+						<f:form.hidden property="targetFolder" />
+						<f:form.hidden property="step" value="import" />
+						<button class="btn btn-danger">DO IT!</button>
+					</f:form>
+
+				</div>
+			</div>
+		</f:then>
+		<f:else>
+			<f:if condition="{importCount}">
+				<f:then>
+					<div class="alert alert-success">
+						<h2>Import successful</h2>
+						<p>
+							{importCount} files were moved to File Abstraction Layer and referenced to the records that you've configured above.<br />
+							<strong>You now have to change the TCA of your field to File Abstraction Layer (Inline)
+								<a href="https://docs.typo3.org/typo3cms/TCAReference/ColumnsConfig/Type/Inline.html#file-abstraction-layer" target="_blank">READ MORE</a></strong>.
+							After changing the TCA the records will show up their images correctly and you can remove the files from /uploads/{configuration.folder} then.<br />
+							<br />
+							You may update the reference index of the system in the backend module "DB-Check".
+							<br />
+							<span class="text-error">Please do not perform the import for the field / table again even if the records / files still show up after checking the configuration!</span>
+						</p>
+					</div>
+				</f:then>
+				<f:else>
+					<f:if condition="{configuration.step}=='check'">
+						<h2>No records were found!</h2>
+					</f:if>
+				</f:else>
+			</f:if>
+		</f:else>
+	</f:if>
+
+
+</f:section>
